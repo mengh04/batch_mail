@@ -1,6 +1,9 @@
-use gpui::{AppContext, Context, Entity, IntoElement, Render};
+use gpui::{AppContext, Context, Entity, EventEmitter, IntoElement, Render};
 
-use crate::views::{HomeView, SettingsView, Views};
+use crate::{
+    events::Events,
+    views::{HomeView, SettingsView, Views},
+};
 
 pub struct AppView {
     pub active_view: Views,
@@ -17,17 +20,21 @@ impl AppView {
         }
     }
 
+    fn observe_view<T: EventEmitter<Events>>(view: &Entity<T>, cx: &mut Context<Self>) {
+        cx.subscribe(&view, |this, _, event, cx| match event {
+            Events::ViewChanged(new_view) => {
+                this.active_view = *new_view;
+                cx.notify();
+            }
+        })
+        .detach();
+    }
+
     fn get_home_view(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
         self.home_view
             .get_or_insert_with(|| {
                 let view = cx.new(|_| HomeView::new());
-                cx.subscribe(&view, |this, _, event, cx| match event {
-                    crate::events::Events::ViewChanged(new_view) => {
-                        this.active_view = *new_view;
-                        cx.notify();
-                    }
-                })
-                .detach();
+                Self::observe_view(&view, cx);
                 view
             })
             .clone()
@@ -37,13 +44,7 @@ impl AppView {
         self.settings_view
             .get_or_insert_with(|| {
                 let view = cx.new(|_| SettingsView::new());
-                cx.subscribe(&view, |this, _, event, cx| match event {
-                    crate::events::Events::ViewChanged(new_view) => {
-                        this.active_view = *new_view;
-                        cx.notify();
-                    }
-                })
-                .detach();
+                Self::observe_view(&view, cx);
                 view
             })
             .clone()
