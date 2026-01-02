@@ -20,11 +20,7 @@ impl AppView {
         }
     }
 
-<<<<<<< HEAD
     fn observe_view<T: EventEmitter<Events>>(view: &Entity<T>, cx: &mut Context<Self>) {
-=======
-    fn observe_view<T: EventEmitter<Events>>(&self, view: Entity<T>, cx: &mut Context<Self>) {
->>>>>>> 734e4453937f267afa8f4186f068927afcc546f9
         cx.subscribe(&view, |this, _, event, cx| match event {
             Events::ViewChanged(new_view) => {
                 this.active_view = *new_view;
