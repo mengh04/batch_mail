@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use gpui::{AnyView, AppContext, Context, Entity, EventEmitter, Render};
+use gpui::{AnyView, AppContext, Context, Entity, EventEmitter, Render, Window};
 
 use crate::{
     events::Events,
@@ -30,7 +30,12 @@ impl AppView {
         .detach();
     }
 
-    fn get_or_create_view(&mut self, view_type: Views, cx: &mut Context<Self>) -> AnyView {
+    fn get_or_create_view(
+        &mut self,
+        window: &mut Window,
+        view_type: Views,
+        cx: &mut Context<Self>,
+    ) -> AnyView {
         if let Some(view) = self.views.get(&view_type) {
             return view.clone();
         }
@@ -42,7 +47,7 @@ impl AppView {
                 v.into()
             }
             Views::SettingsView => {
-                let v = cx.new(|_| SettingsView::new());
+                let v = cx.new(|cx| SettingsView::new(window, cx));
                 Self::observe_view(&v, cx);
                 v.into()
             }
@@ -56,9 +61,9 @@ impl AppView {
 impl Render for AppView {
     fn render(
         &mut self,
-        _window: &mut gpui::Window,
+        window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        self.get_or_create_view(self.active_view, cx)
+        self.get_or_create_view(window, self.active_view, cx)
     }
 }
