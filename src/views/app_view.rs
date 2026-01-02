@@ -1,4 +1,6 @@
-use gpui::{AppContext, Context, Entity, EventEmitter, IntoElement, Render};
+use std::collections::HashMap;
+
+use gpui::{AnyView, AppContext, Context, Entity, EventEmitter, Render};
 
 use crate::{
     events::Events,
@@ -7,21 +9,19 @@ use crate::{
 
 pub struct AppView {
     pub active_view: Views,
-    home_view: Option<Entity<HomeView>>,
-    settings_view: Option<Entity<SettingsView>>,
+    views: HashMap<Views, AnyView>,
 }
 
 impl AppView {
     pub fn new() -> Self {
         Self {
             active_view: Views::HomeView,
-            home_view: None,
-            settings_view: None,
+            views: HashMap::new(),
         }
     }
 
     fn observe_view<T: EventEmitter<Events>>(view: &Entity<T>, cx: &mut Context<Self>) {
-        cx.subscribe(&view, |this, _, event, cx| match event {
+        cx.subscribe(view, |this, _, event, cx| match event {
             Events::ViewChanged(new_view) => {
                 this.active_view = *new_view;
                 cx.notify();
@@ -30,24 +30,26 @@ impl AppView {
         .detach();
     }
 
-    fn get_home_view(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
-        self.home_view
-            .get_or_insert_with(|| {
-                let view = cx.new(|_| HomeView::new());
-                Self::observe_view(&view, cx);
-                view
-            })
-            .clone()
-    }
+    fn get_or_create_view(&mut self, view_type: Views, cx: &mut Context<Self>) -> AnyView {
+        if let Some(view) = self.views.get(&view_type) {
+            return view.clone();
+        }
 
-    fn get_settings_view(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
-        self.settings_view
-            .get_or_insert_with(|| {
-                let view = cx.new(|_| SettingsView::new());
-                Self::observe_view(&view, cx);
-                view
-            })
-            .clone()
+        let view: AnyView = match view_type {
+            Views::HomeView => {
+                let v = cx.new(|_| HomeView::new());
+                Self::observe_view(&v, cx);
+                v.into()
+            }
+            Views::SettingsView => {
+                let v = cx.new(|_| SettingsView::new());
+                Self::observe_view(&v, cx);
+                v.into()
+            }
+        };
+
+        self.views.insert(view_type, view.clone());
+        view
     }
 }
 
@@ -57,9 +59,6 @@ impl Render for AppView {
         _window: &mut gpui::Window,
         cx: &mut gpui::Context<Self>,
     ) -> impl gpui::IntoElement {
-        match self.active_view {
-            Views::HomeView => self.get_home_view(cx).into_any_element(),
-            Views::SettingsView => self.get_settings_view(cx).into_any_element(),
-        }
+        self.get_or_create_view(self.active_view, cx)
     }
 }

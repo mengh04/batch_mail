@@ -5,7 +5,7 @@ pub mod settings_view;
 use home_view::HomeView;
 use settings_view::SettingsView;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Views {
     HomeView,
     SettingsView,
