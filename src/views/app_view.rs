@@ -42,7 +42,7 @@ impl AppView {
 
         let view: AnyView = match view_type {
             Views::HomeView => {
-                let v = cx.new(|_| HomeView::new());
+                let v = cx.new(|cx| HomeView::new(window, cx));
                 Self::observe_view(&v, cx);
                 v.into()
             }

@@ -1,5 +1,3 @@
-use std::process::Child;
-
 use gpui::{
     AppContext, Context, Entity, EventEmitter, InteractiveElement, IntoElement, ParentElement,
     Render, StatefulInteractiveElement, Styled, Window, div, rgb,
