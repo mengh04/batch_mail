@@ -1,10 +1,14 @@
+use std::process::Child;
+
 use gpui::{
     AppContext, Context, Entity, EventEmitter, InteractiveElement, IntoElement, ParentElement,
-    Render, StatefulInteractiveElement, Styled, Window, div,
+    Render, StatefulInteractiveElement, Styled, Window, div, rgb,
 };
 use gpui_component::{
+    StyledExt,
     button::Button,
     input::{Input, InputState},
+    label::Label,
     scroll::ScrollableElement,
 };
 
@@ -14,7 +18,7 @@ pub struct SettingsView {
     config: MailConfig,
     smtp_server: Entity<InputState>,
     smtp_port: Entity<InputState>,
-    emil_address: Entity<InputState>,
+    email_address: Entity<InputState>,
     password: Entity<InputState>,
     sender_name: Entity<InputState>,
 }
@@ -51,7 +55,7 @@ impl SettingsView {
             config,
             smtp_server,
             smtp_port,
-            emil_address,
+            email_address: emil_address,
             password,
             sender_name,
         }
@@ -60,7 +64,7 @@ impl SettingsView {
     fn save_config(&mut self, cx: &mut Context<Self>) {
         let smtp_server = self.smtp_server.read(cx).value();
         let smtp_port = self.smtp_port.read(cx).value();
-        let emil_address = self.emil_address.read(cx).value();
+        let emil_address = self.email_address.read(cx).value();
         let password = self.password.read(cx).value();
         let sender_name = self.sender_name.read(cx).value();
 
@@ -77,6 +81,25 @@ impl SettingsView {
             Err(e) => eprintln!("配置保存失败: {:?}", e),
         }
     }
+
+    fn render_form_field(
+        &self,
+        label_text: impl Into<String>,
+        input: &Entity<InputState>,
+    ) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .child(
+                div()
+                    .text_sm()
+                    .font_semibold()
+                    .text_color(rgb(0xe4e4e7))
+                    .child(label_text.into()),
+            )
+            .child(Input::new(input))
+    }
 }
 
 impl EventEmitter<Events> for SettingsView {}
@@ -91,22 +114,54 @@ impl Render for SettingsView {
         div()
             .id("settings-view")
             .size_full()
-            .overflow_scroll()
-            .overflow_scrollbar()
-            .child(Input::new(&self.smtp_server))
-            .child(Input::new(&self.smtp_port))
-            .child(Input::new(&self.password))
-            .child(Input::new(&self.sender_name))
+            .bg(gpui::rgb(0x18181b))
+            .flex()
+            .flex_col()
             .child(
-                Button::new("confirm-btn")
-                    .label("确定")
-                    .on_click(move |_, _, cx| {
-                        view_handle.update(cx, |this, cx| {
-                            this.save_config(cx);
-                            cx.emit(Events::ViewChanged(crate::views::Views::HomeView));
-                            eprintln!("配置已经保存");
-                        });
-                    }),
+                div()
+                    .flex()
+                    .justify_between()
+                    .p_4()
+                    .border_b_1()
+                    .border_color(gpui::rgb(0x27272a))
+                    .child(Label::new("设置").text_xl().text_color(rgb(0xe4e4e7)))
+                    .child(Button::new("back-btn").label("返回").on_click({
+                        let view_handle = view_handle.clone();
+                        move |_, _, cx| {
+                            view_handle.update(cx, |_this, cx| {
+                                cx.emit(Events::ViewChanged(crate::views::Views::HomeView));
+                            });
+                        }
+                    })),
+            )
+            .child(
+                div()
+                    .id("form-container")
+                    .flex()
+                    .flex_col()
+                    .gap_6()
+                    .p_6()
+                    .overflow_y_scroll()
+                    .overflow_scrollbar()
+                    .flex_1()
+                    .child(self.render_form_field("SMTP 服务器", &self.smtp_server))
+                    .child(self.render_form_field("SMTP 端口", &self.smtp_port))
+                    .child(self.render_form_field("邮箱地址", &self.email_address))
+                    .child(self.render_form_field("邮箱密码", &self.password))
+                    .child(self.render_form_field("发件人名称", &self.sender_name))
+                    .child(
+                        div()
+                            .mt_4()
+                            .child(Button::new("confirm-btn").label("确定").on_click(
+                                move |_, _, cx| {
+                                    view_handle.update(cx, |this, cx| {
+                                        this.save_config(cx);
+                                        cx.emit(Events::ViewChanged(crate::views::Views::HomeView));
+                                        eprintln!("配置已经保存");
+                                    });
+                                },
+                            )),
+                    ),
             )
     }
 }
