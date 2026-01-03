@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use gpui::{
     AppContext, AsyncApp, Context, Entity, EventEmitter, InteractiveElement, IntoElement,
     ParentElement, Render, StatefulInteractiveElement, Styled, WeakEntity, Window, div,
-    prelude::FluentBuilder, rgb,
+    prelude::FluentBuilder, px, rgb,
 };
 use gpui_component::{
     IconName, StyledExt,
@@ -11,6 +11,7 @@ use gpui_component::{
     input::{Input, InputState},
     label::Label,
     scroll::ScrollableElement,
+    v_flex,
 };
 
 use crate::{events::Events, mail_config::MailConfig, views::Views};
@@ -380,7 +381,6 @@ impl HomeView {
             .flex()
             .flex_col()
             .gap_4()
-            .mt_4()
             .child(if is_sending {
                 div()
                     .flex()
@@ -439,22 +439,32 @@ impl Render for HomeView {
             .id("home-view")
             .size_full()
             .bg(rgb(0x18181b))
-            .flex()
-            .flex_col()
+            .v_flex()
             .child(self.render_header(cx))
             .child(
-                div()
-                    .id("body")
-                    .flex()
-                    .flex_col()
-                    .gap_6()
-                    .p_6()
-                    .flex_1()
-                    .overflow_y_scroll()
-                    .overflow_scrollbar()
-                    .child(self.render_file_section(cx))
-                    .child(self.render_email_info_section())
-                    .child(self.render_action_section(cx)),
+                div().id("body").v_flex().flex_1().child(
+                    div()
+                        .id("content-container")
+                        .v_flex()
+                        .gap_6()
+                        .p_6()
+                        .w_full()
+                        .h_full()
+                        .overflow_y_scroll()
+                        .overflow_scrollbar()
+                        .child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .gap_6()
+                                .max_w(px(800.0))
+                                .mx_auto()
+                                .w_full()
+                                .child(self.render_file_section(cx))
+                                .child(self.render_email_info_section())
+                                .child(self.render_action_section(cx)),
+                        ),
+                ),
             )
     }
 }
